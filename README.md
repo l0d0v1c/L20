@@ -2,6 +2,12 @@
 
 Une visualisation interactive et animée du parcours migratoire de l'haplogroupe Y depuis Y-Adam (il y a ~236 000 ans) jusqu'à un individu moderne nommé Luc, situé dans le centre de la France.
 
+## 🌐 Application en Ligne
+
+**[🚀 Accéder à l'application interactive](https://l0d0v1c.github.io/L20/)**
+
+Explorez la migration de l'haplogroupe Y directement dans votre navigateur avec zoom automatique, animation fluide et contrôles interactifs.
+
 ## 📊 Aperçu
 
 ![Migration de l'Haplogroupe Y](migration_haplogroupe_Y_animé.svg)
