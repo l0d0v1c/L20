@@ -1,0 +1,2 @@
+SampleID	Haplogroup	KeyHaplogroup	Mutations	LineageTrack
+SQ26G3F2	R1b1a1b1a1a2a	.	DF27/S250	R1b1a1b1a1a2a(1/1)->R1b1a1b1a1a2->R1b1a1b1a1a->R1b1a1b1a1->R1b1a1b1a->R1b1a1b1->R1b1a1b->R1b1a1->R1b1a->R1b1(1/20)->R1b->R1->R->P1(2/98)->P->K2b->K2->K->IJK->HIJK->GHIJK->F->CF->CT(1/199)->BT(1/375)->A1b->A1->A0T->A00T->A000T->Y-Adam

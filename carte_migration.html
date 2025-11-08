@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migration de l'Haplogroupe Y - De Y-Adam à SQ26G3F2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            overflow: hidden;
+        }
+
+        #map-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #map-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+        }
+
+        #map-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #overlay-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #info-panel.hidden {
+            opacity: 0;
+            transform: translateX(-20px);
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #fff;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #current-step {
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        #step-location {
+            font-size: 16px;
+            color: #87ceeb;
+            margin-bottom: 5px;
+        }
+
+        #step-time {
+            font-size: 14px;
+            color: #90ee90;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        #step-description {
+            font-size: 14px;
+            color: #ddd;
+            line-height: 1.6;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            border-radius: 50px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: linear-gradient(135deg, #555 0%, #666 100%);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        button.play-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        button.play-btn:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        button.reset-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        button.reset-btn:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        #timeline {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 1000px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #ddd;
+        }
+
+        #timeline-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            position: relative;
+            overflow: visible;
+            margin-bottom: 60px;
+        }
+
+        #timeline-progress {
+            height: 100%;
+            background: linear-gradient(to right, #ff6b6b, #ffd700, #90ee90, #87ceeb, #764ba2, #f5576c);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .period-marker {
+            position: absolute;
+            bottom: -20px;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #ffd700;
+            font-style: italic;
+            white-space: nowrap;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+
+        .period-tick {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 215, 0, 0.5);
+        }
+
+        #step-counter {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        .legend {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 280px;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .legend.hidden {
+            opacity: 0;
+            transform: translateX(20px);
+            pointer-events: none;
+        }
+
+        .legend h3 {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: #ddd;
+        }
+
+        .legend-line {
+            width: 30px;
+            height: 3px;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ddd;
+            font-size: 13px;
+        }
+
+        .speed-control select {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Animation pour les marqueurs */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #info-panel, .legend {
+            animation: fadeIn 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="map-container">
+        <div id="map-wrapper">
+            <img id="map-image" src="carte.jpg" alt="Carte du monde">
+            <svg id="overlay-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+
+        <div id="info-panel">
+            <h1>Migration de l'Haplogroupe Y</h1>
+            <div id="current-step">Y-Adam</div>
+            <div id="step-location">Afrique Centrale/Est</div>
+            <div id="step-time">~236 000 ans</div>
+            <div id="step-description">Ancêtre commun patrilinéaire de tous les hommes vivants</div>
+        </div>
+
+        <div class="legend">
+            <h3>📍 Périodes de Migration</h3>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #ff6b6b;"></div>
+                <span>Afrique ancienne (236-190 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #ffa500;"></div>
+                <span>Afrique diversification (190-88 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #ffff00;"></div>
+                <span>Sortie d'Afrique (88-60 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #90ee90;"></div>
+                <span>Expansion Asie (60-47 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #7fffd4;"></div>
+                <span>Asie Centrale (47-38 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #87ceeb;"></div>
+                <span>Sibérie/Steppes (38-28 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #4169e1;"></div>
+                <span>Vers l'Europe (28-10 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #7b68ee;"></div>
+                <span>Europe Ouest (10-4 kya)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #9932cc;"></div>
+                <span>France/Ibérie (4 kya-450 av. J.-C.)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #ff1493;"></div>
+                <span>Aujourd'hui</span>
+            </div>
+        </div>
+
+        <div id="timeline">
+            <div id="timeline-labels">
+                <span>~236 000 ans (Y-Adam)</span>
+                <span id="current-time-label">Aujourd'hui</span>
+            </div>
+            <div id="timeline-bar">
+                <div id="timeline-progress"></div>
+            </div>
+            <div id="step-counter">Étape 1 / 33</div>
+        </div>
+
+        <div id="controls">
+            <button id="prev-btn" onclick="prevStep()">← Précédent</button>
+            <button id="play-btn" class="play-btn" onclick="togglePlay()">▶ Lecture</button>
+            <button id="next-btn" onclick="nextStep()">Suivant →</button>
+            <button class="reset-btn" onclick="reset()">⟳ Recommencer</button>
+            <button onclick="toggleLegends()">👁️ Légendes</button>
+            <button onclick="exportAnimatedSVG()">💾 Export SVG animé</button>
+            <div class="speed-control">
+                <label>Vitesse:</label>
+                <select id="speed-select" onchange="changeSpeed()">
+                    <option value="3000">Lente</option>
+                    <option value="2000" selected>Normale</option>
+                    <option value="1000">Rapide</option>
+                    <option value="500">Très rapide</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const migrationSteps = [
+            {
+                haplogroup: "Y-Adam",
+                location: "Afrique Centrale/Est",
+                x: 0.5646,
+                y: 0.5289,
+                time: "~236 000 ans",
+                description: "Ancêtre commun patrilinéaire de tous les hommes vivants",
+                color: "#ff6b6b",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "A000T",
+                location: "Afrique de l'Est",
+                x: 0.5692,
+                y: 0.5465,
+                time: "~220 000 ans",
+                description: "Premières mutations distinctives dans les populations est-africaines",
+                color: "#ff6b6b",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "A00T",
+                location: "Afrique de l'Est",
+                x: 0.5763,
+                y: 0.5342,
+                time: "~200 000 ans",
+                description: "Expansion et diversification en Afrique de l'Est",
+                color: "#ff7f50",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "A0T",
+                location: "Afrique de l'Est",
+                x: 0.5728,
+                y: 0.5148,
+                time: "~190 000 ans",
+                description: "Diversification africaine, ancêtre de la plupart des lignées modernes",
+                color: "#ffa500",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "A1",
+                location: "Afrique Est et Sud",
+                x: 0.5833,
+                y: 0.5518,
+                time: "~150 000 ans",
+                description: "Expansion vers le sud de l'Afrique",
+                color: "#ffa500",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "A1b",
+                location: "Afrique de l'Est",
+                x: 0.5927,
+                y: 0.5166,
+                time: "~100 000 ans",
+                description: "Populations est-africaines ancestrales",
+                color: "#ffa500",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "BT",
+                location: "Afrique du Nord-Est",
+                x: 0.5634,
+                y: 0.4672,
+                time: "~88 000 ans",
+                description: "Ancêtre de la majorité des haplogroupes non-africains modernes",
+                color: "#ffd700",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "CT",
+                location: "Corne de l'Afrique / Moyen-Orient",
+                x: 0.5763,
+                y: 0.4831,
+                time: "~70 000 ans",
+                description: "Sortie d'Afrique imminente, corridor de la Corne de l'Afrique",
+                color: "#ffff00",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "CF",
+                location: "Proche-Orient",
+                x: 0.5751,
+                y: 0.4319,
+                time: "~65 000 ans",
+                description: "Installation au Proche-Orient après la sortie d'Afrique",
+                color: "#adff2f",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "F",
+                location: "Moyen-Orient / Asie du Sud-Ouest",
+                x: 0.5810,
+                y: 0.4090,
+                time: "~60 000 ans",
+                description: "Ancêtre de la majorité des populations eurasiennes modernes",
+                color: "#90ee90",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "GHIJK",
+                location: "Asie du Sud-Ouest",
+                x: 0.5904,
+                y: 0.3808,
+                time: "~55 000 ans",
+                description: "Expansion vers l'Asie, diversification majeure",
+                color: "#90ee90",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "HIJK",
+                location: "Asie du Sud / Centrale",
+                x: 0.6115,
+                y: 0.3772,
+                time: "~50 000 ans",
+                description: "Diversification en Asie du Sud et Centrale",
+                color: "#90ee90",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "IJK",
+                location: "Asie du Sud-Ouest / Centrale",
+                x: 0.5892,
+                y: 0.3543,
+                time: "~47 000 ans",
+                description: "Populations d'Asie centrale et occidentale",
+                color: "#7fffd4",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "K",
+                location: "Asie Centrale",
+                x: 0.6138,
+                y: 0.3455,
+                time: "~45 000 ans",
+                description: "Grande diversification eurasienne, origine de nombreuses lignées",
+                color: "#7fffd4",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "K2",
+                location: "Asie Centrale / Sud",
+                x: 0.6268,
+                y: 0.3913,
+                time: "~43 000 ans",
+                description: "Expansion simultanée vers l'est et l'ouest",
+                color: "#7fffd4",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "K2b",
+                location: "Asie Centrale",
+                x: 0.6362,
+                y: 0.4090,
+                time: "~40 000 ans",
+                description: "Populations d'Asie centrale, steppes eurasiennes",
+                color: "#7fffd4",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "P",
+                location: "Asie Centrale / Sibérie Sud",
+                x: 0.6561,
+                y: 0.3949,
+                time: "~38 000 ans",
+                description: "Ancêtre des haplogroupes R et Q, steppes sibériennes",
+                color: "#87ceeb",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "P1",
+                location: "Sibérie Sud / Asie Centrale",
+                x: 0.6749,
+                y: 0.3966,
+                time: "~35 000 ans",
+                description: "Populations de la steppe eurasienne",
+                color: "#87ceeb",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "R",
+                location: "Sibérie / Asie Centrale",
+                x: 0.6761,
+                y: 0.3719,
+                time: "~28 000 ans",
+                description: "Ancêtre majeur des Européens modernes",
+                color: "#6495ed",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "R1",
+                location: "Asie Centrale / Sibérie Ouest",
+                x: 0.6573,
+                y: 0.3667,
+                time: "~25 000 ans",
+                description: "Division entre les lignées R1a et R1b",
+                color: "#4169e1",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "R1b",
+                location: "Asie Centrale / Caucase",
+                x: 0.5751,
+                y: 0.3684,
+                time: "~20 000 ans",
+                description: "Ancêtre principal des Européens de l'Ouest, région du Caucase",
+                color: "#4169e1",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "R1b1",
+                location: "Caucase / Anatolie",
+                x: 0.5657,
+                y: 0.4072,
+                time: "~18 000 ans",
+                description: "Expansion vers l'ouest, refuge anatolien",
+                color: "#4169e1",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "R1b1a",
+                location: "Anatolie / Balkans",
+                x: 0.5540,
+                y: 0.3861,
+                time: "~15 000 ans",
+                description: "Période glaciaire, refuge en Anatolie et premiers Balkans",
+                color: "#4169e1",
+                period: "Paléolithique"
+            },
+            {
+                haplogroup: "R1b1a1",
+                location: "Europe du Sud-Est",
+                x: 0.5377,
+                y: 0.3650,
+                time: "~13 000 ans",
+                description: "Début de l'expansion européenne post-glaciaire",
+                color: "#4169e1",
+                period: "Mésolithique"
+            },
+            {
+                haplogroup: "R1b1a1b",
+                location: "Europe Centrale / Sud",
+                x: 0.5291,
+                y: 0.3600,
+                time: "~10 000 ans",
+                description: "Expansion néolithique en Europe centrale",
+                color: "#5a7fd6",
+                period: "Mésolithique"
+            },
+            {
+                haplogroup: "R1b1a1b1",
+                location: "Europe Centrale",
+                x: 0.5244,
+                y: 0.3520,
+                time: "~8 000 ans",
+                description: "Populations néolithiques d'Europe centrale",
+                color: "#5a7fd6",
+                period: "Néolithique"
+            },
+            {
+                haplogroup: "R1b1a1b1a",
+                location: "Europe Ouest / Centrale",
+                x: 0.5100,
+                y: 0.3480,
+                time: "~6 500 ans",
+                description: "Expansion vers l'Europe de l'Ouest, cultures néolithiques",
+                color: "#7b68ee",
+                period: "Néolithique"
+            },
+            {
+                haplogroup: "R1b1a1b1a1",
+                location: "Europe de l'Ouest",
+                x: 0.5021,
+                y: 0.3450,
+                time: "~5 500 ans",
+                description: "Âge du Bronze, culture du vase campaniforme",
+                color: "#8b00ff",
+                period: "Âge du Bronze"
+            },
+            {
+                haplogroup: "R1b1a1b1a1a",
+                location: "France / Péninsule Ibérique",
+                x: 0.4955,
+                y: 0.3500,
+                time: "~5 000 ans",
+                description: "Installation en France et dans la péninsule Ibérique",
+                color: "#8b00ff",
+                period: "Âge du Bronze"
+            },
+            {
+                haplogroup: "R1b1a1b1a1a2",
+                location: "Péninsule Ibérique / Sud-Ouest France",
+                x: 0.4873,
+                y: 0.3520,
+                time: "~4 500 ans",
+                description: "Concentration dans la péninsule ibérique et le sud-ouest de la France",
+                color: "#9932cc",
+                period: "Âge du Bronze"
+            },
+            {
+                haplogroup: "R1b1a1b1a1a2a (DF27)",
+                location: "Ibérie / Gaule",
+                x: 0.4842,
+                y: 0.3540,
+                time: "~4 000 ans",
+                description: "Âge du Bronze atlantique, mutation DF27/S250",
+                color: "#9932cc",
+                period: "Âge du Bronze"
+            },
+            {
+                haplogroup: "La Tène",
+                location: "La Tène, Suisse",
+                x: 0.4959,
+                y: 0.3480,
+                time: "~450 av. J.-C.",
+                description: "Période de La Tène, culture celtique, Second Âge du Fer",
+                color: "#9932cc",
+                period: "Âge du Fer"
+            },
+            {
+                haplogroup: "Luc",
+                location: "Centre de la France",
+                x: 0.4889,
+                y: 0.3500,
+                time: "Aujourd'hui",
+                description: "Luc, porteur de l'haplogroupe R1b1a1b1a1a2a (DF27/S250)",
+                color: "#ff1493",
+                period: "Époque Contemporaine"
+            }
+        ];
+
+        const mapWrapper = document.getElementById('map-wrapper');
+        const mapImage = document.getElementById('map-image');
+        const svg = document.getElementById('overlay-svg');
+
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval = null;
+        let animationSpeed = 2000;
+        let animationProgress = 0;
+
+        // Variables pour le zoom
+        let currentZoom = 1;
+        let currentPanX = 0;
+        let currentPanY = 0;
+        let targetZoom = 1;
+        let targetPanX = 0;
+        let targetPanY = 0;
+
+        // Initialiser le SVG
+        function initSVG() {
+            const rect = mapImage.getBoundingClientRect();
+
+            // Définir le viewBox du SVG pour utiliser des coordonnées 0-1
+            svg.setAttribute('viewBox', '0 0 1 1');
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            draw();
+        }
+
+        mapImage.onload = initSVG;
+        window.addEventListener('resize', () => {
+            initSVG();
+        });
+
+        // Dessiner la carte
+        function draw() {
+            // Vider le SVG
+            svg.innerHTML = '';
+
+            // Créer un groupe pour les lignes
+            const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+            // Dessiner toutes les lignes passées
+            for (let i = 0; i < currentStep; i++) {
+                const curr = migrationSteps[i];
+                const next = migrationSteps[i + 1];
+
+                if (next) {
+                    drawLine(curr, next, 1, linesGroup);
+                }
+            }
+
+            // Dessiner la ligne en cours d'animation
+            if (animationProgress > 0 && currentStep < migrationSteps.length - 1) {
+                const curr = migrationSteps[currentStep];
+                const next = migrationSteps[currentStep + 1];
+                drawLineAnimated(curr, next, animationProgress, linesGroup);
+            }
+
+            svg.appendChild(linesGroup);
+
+            // Créer un groupe pour les points
+            const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+            // Dessiner tous les points passés
+            for (let i = 0; i <= Math.min(currentStep, migrationSteps.length - 1); i++) {
+                const step = migrationSteps[i];
+                const isCurrent = i === currentStep;
+                drawPoint(step, isCurrent, pointsGroup);
+            }
+
+            svg.appendChild(pointsGroup);
+        }
+
+        // Dessiner une ligne en SVG
+        function drawLine(from, to, progress, group) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', from.x);
+            line.setAttribute('y1', from.y);
+            line.setAttribute('x2', to.x);
+            line.setAttribute('y2', to.y);
+            line.setAttribute('stroke', from.color);
+            line.setAttribute('stroke-width', '0.002');
+            line.setAttribute('stroke-opacity', '0.6');
+            line.setAttribute('stroke-linecap', 'round');
+            group.appendChild(line);
+        }
+
+        // Dessiner une ligne animée en SVG
+        function drawLineAnimated(from, to, progress, group) {
+            const endX = from.x + (to.x - from.x) * progress;
+            const endY = from.y + (to.y - from.y) * progress;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', from.x);
+            line.setAttribute('y1', from.y);
+            line.setAttribute('x2', endX);
+            line.setAttribute('y2', endY);
+            line.setAttribute('stroke', from.color);
+            line.setAttribute('stroke-width', '0.002');
+            line.setAttribute('stroke-opacity', '0.6');
+            line.setAttribute('stroke-linecap', 'round');
+            group.appendChild(line);
+        }
+
+        // Dessiner un point en SVG
+        function drawPoint(step, isCurrent, group) {
+            const x = step.x;
+            const y = step.y;
+            const baseSize = isCurrent ? 0.008 : 0.005;
+
+            // Effet de pulsation pour le point actuel
+            const pulse = isCurrent ? Math.sin(Date.now() / 200) * 0.002 : 0;
+            const size = baseSize + pulse;
+
+            // Halo lumineux pour le point actuel
+            if (isCurrent) {
+                const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                halo.setAttribute('cx', x);
+                halo.setAttribute('cy', y);
+                halo.setAttribute('r', size * 2);
+                halo.setAttribute('fill', step.color);
+                halo.setAttribute('opacity', '0.3');
+                group.appendChild(halo);
+            }
+
+            // Cercle extérieur
+            const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            outer.setAttribute('cx', x);
+            outer.setAttribute('cy', y);
+            outer.setAttribute('r', size);
+            outer.setAttribute('fill', step.color);
+            outer.setAttribute('stroke', 'white');
+            outer.setAttribute('stroke-width', isCurrent ? '0.002' : '0.0015');
+            group.appendChild(outer);
+
+            // Point central lumineux
+            const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            inner.setAttribute('cx', x);
+            inner.setAttribute('cy', y);
+            inner.setAttribute('r', size * 0.4);
+            inner.setAttribute('fill', 'white');
+            group.appendChild(inner);
+
+            // Label pour certains points clés (haplogroup)
+            if (isCurrent || step.haplogroup === 'Y-Adam' || step.haplogroup === 'Luc' || step.haplogroup === 'La Tène') {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', y - size - 0.005);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '0.008');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', 'white');
+                text.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                text.setAttribute('stroke-width', '0.0002');
+                text.setAttribute('paint-order', 'stroke');
+                text.textContent = step.haplogroup;
+                group.appendChild(text);
+            }
+
+        }
+
+        // Calculer le zoom optimal pour un point
+        function calculateZoomForStep(stepIndex) {
+            const step = migrationSteps[stepIndex];
+
+            // Zoom différencié selon la région
+            let zoomLevel = 1.5;
+
+            // Zoom plus important pour les étapes africaines (beaucoup de points proches)
+            if (stepIndex >= 0 && stepIndex <= 6) {
+                zoomLevel = 2.5;
+            }
+            // Zoom moyen pour la sortie d'Afrique et Asie
+            else if (stepIndex >= 7 && stepIndex <= 19) {
+                zoomLevel = 2.0;
+            }
+            // Zoom élevé pour l'Europe (petite région, beaucoup de détails)
+            else if (stepIndex >= 20 && stepIndex <= 32) {
+                zoomLevel = 3.5;
+            }
+
+            // Calculer le centrage (offset par rapport au centre de la vue)
+            // Coordonnées normalisées (0-1) -> coordonnées de vue (-50% à 50%)
+            const targetX = (step.x - 0.5) * 100;
+            const targetY = (step.y - 0.5) * 100;
+
+            return {
+                zoom: zoomLevel,
+                panX: -targetX * zoomLevel,
+                panY: -targetY * zoomLevel
+            };
+        }
+
+        // Appliquer le zoom et le pan
+        function applyZoomAndPan() {
+            const transform = `translate(${currentPanX}%, ${currentPanY}%) scale(${currentZoom})`;
+            // On transforme le wrapper qui contient l'image ET le canvas
+            mapWrapper.style.transform = transform;
+        }
+
+        // Animation fluide du zoom
+        function animateZoom() {
+            const zoomSpeed = 0.1;
+            const panSpeed = 0.1;
+
+            // Interpolation douce vers la cible
+            currentZoom += (targetZoom - currentZoom) * zoomSpeed;
+            currentPanX += (targetPanX - currentPanX) * panSpeed;
+            currentPanY += (targetPanY - currentPanY) * panSpeed;
+
+            // Appliquer la transformation à l'image (pas au canvas)
+            applyZoomAndPan();
+        }
+
+        // Mettre à jour les informations
+        function updateInfo() {
+            const step = migrationSteps[currentStep];
+
+            document.getElementById('current-step').textContent = step.haplogroup;
+            document.getElementById('step-location').textContent = step.location;
+            document.getElementById('step-time').textContent = step.time;
+            document.getElementById('step-description').textContent = step.description;
+
+            // Mettre à jour la barre de progression
+            const progress = (currentStep / (migrationSteps.length - 1)) * 100;
+            document.getElementById('timeline-progress').style.width = progress + '%';
+            document.getElementById('step-counter').textContent = `Étape ${currentStep + 1} / ${migrationSteps.length}`;
+
+            // Activer/désactiver les boutons
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === migrationSteps.length - 1;
+
+            // Mettre à jour le zoom pour le point actuel
+            const zoomConfig = calculateZoomForStep(currentStep);
+            targetZoom = zoomConfig.zoom;
+            targetPanX = zoomConfig.panX;
+            targetPanY = zoomConfig.panY;
+        }
+
+        // Animation fluide
+        function animate() {
+            if (!isPlaying) return;
+
+            animationProgress += 0.05;
+
+            if (animationProgress >= 1) {
+                animationProgress = 0;
+                if (currentStep < migrationSteps.length - 1) {
+                    currentStep++;
+                    updateInfo();
+                } else {
+                    stopPlay();
+                    return;
+                }
+            }
+
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Étape suivante
+        function nextStep() {
+            if (currentStep < migrationSteps.length - 1) {
+                currentStep++;
+                animationProgress = 0;
+                updateInfo();
+                draw();
+            }
+        }
+
+        // Étape précédente
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                animationProgress = 0;
+                updateInfo();
+                draw();
+            }
+        }
+
+        // Lecture/Pause
+        function togglePlay() {
+            if (isPlaying) {
+                stopPlay();
+            } else {
+                startPlay();
+            }
+        }
+
+        function startPlay() {
+            isPlaying = true;
+            document.getElementById('play-btn').textContent = '⏸ Pause';
+            animate();
+        }
+
+        function stopPlay() {
+            isPlaying = false;
+            document.getElementById('play-btn').textContent = '▶ Lecture';
+        }
+
+        // Recommencer
+        function reset() {
+            stopPlay();
+            currentStep = 0;
+            animationProgress = 0;
+            updateInfo();
+            draw();
+        }
+
+        // Toggle visibility of legends
+        function toggleLegends() {
+            document.getElementById('info-panel').classList.toggle('hidden');
+            document.querySelector('.legend').classList.toggle('hidden');
+        }
+
+        // Export SVG animé
+        function exportAnimatedSVG() {
+            const svgNS = "http://www.w3.org/2000/svg";
+
+            // Obtenir les dimensions affichées de l'image (après object-fit: cover)
+            const mapImg = document.getElementById('map-image');
+            const mapWrapper = document.getElementById('map-wrapper');
+
+            // Utiliser les dimensions du conteneur comme référence
+            const displayWidth = mapWrapper.clientWidth;
+            const displayHeight = mapWrapper.clientHeight;
+
+            const svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('xmlns', svgNS);
+            svg.setAttribute('viewBox', `0 0 ${displayWidth} ${displayHeight}`);
+            svg.setAttribute('width', displayWidth);
+            svg.setAttribute('height', displayHeight);
+
+            // Ajouter l'image de fond avec preserveAspectRatio pour simuler object-fit: cover
+            const image = document.createElementNS(svgNS, 'image');
+            image.setAttribute('href', 'carte.jpg');
+            image.setAttribute('x', '0');
+            image.setAttribute('y', '0');
+            image.setAttribute('width', displayWidth);
+            image.setAttribute('height', displayHeight);
+            image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+            svg.appendChild(image);
+
+            // Groupe pour les animations
+            const animGroup = document.createElementNS(svgNS, 'g');
+            svg.appendChild(animGroup);
+
+            // Durée totale de l'animation (en secondes)
+            const totalDuration = migrationSteps.length * 2;
+            const stepDuration = 2;
+
+            // Dessiner les lignes avec animation
+            for (let i = 0; i < migrationSteps.length - 1; i++) {
+                const from = migrationSteps[i];
+                const to = migrationSteps[i + 1];
+
+                const line = document.createElementNS(svgNS, 'line');
+                line.setAttribute('x1', from.x * displayWidth);
+                line.setAttribute('y1', from.y * displayHeight);
+                line.setAttribute('x2', to.x * displayWidth);
+                line.setAttribute('y2', to.y * displayHeight);
+                line.setAttribute('stroke', from.color);
+                line.setAttribute('stroke-width', '3');
+                line.setAttribute('stroke-opacity', '0.8');
+                line.setAttribute('stroke-linecap', 'round');
+
+                // Animation de la ligne (apparition progressive)
+                const animate = document.createElementNS(svgNS, 'animate');
+                animate.setAttribute('attributeName', 'stroke-dasharray');
+                animate.setAttribute('from', '0 1000');
+                animate.setAttribute('to', '1000 0');
+                animate.setAttribute('begin', (i * stepDuration) + 's');
+                animate.setAttribute('dur', stepDuration + 's');
+                animate.setAttribute('fill', 'freeze');
+                line.appendChild(animate);
+
+                animGroup.appendChild(line);
+            }
+
+            // Dessiner les points avec animation
+            migrationSteps.forEach((step, index) => {
+                const cx = step.x * displayWidth;
+                const cy = step.y * displayHeight;
+
+                // Halo extérieur
+                const halo = document.createElementNS(svgNS, 'circle');
+                halo.setAttribute('cx', cx);
+                halo.setAttribute('cy', cy);
+                halo.setAttribute('r', '15');
+                halo.setAttribute('fill', step.color);
+                halo.setAttribute('opacity', '0');
+
+                const haloAnim = document.createElementNS(svgNS, 'animate');
+                haloAnim.setAttribute('attributeName', 'opacity');
+                haloAnim.setAttribute('from', '0');
+                haloAnim.setAttribute('to', '0.4');
+                haloAnim.setAttribute('begin', (index * stepDuration) + 's');
+                haloAnim.setAttribute('dur', '0.5s');
+                haloAnim.setAttribute('fill', 'freeze');
+                halo.appendChild(haloAnim);
+                animGroup.appendChild(halo);
+
+                // Point principal
+                const circle = document.createElementNS(svgNS, 'circle');
+                circle.setAttribute('cx', cx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', '8');
+                circle.setAttribute('fill', step.color);
+                circle.setAttribute('stroke', 'white');
+                circle.setAttribute('stroke-width', '2');
+                circle.setAttribute('opacity', '0');
+
+                const circleAnim = document.createElementNS(svgNS, 'animate');
+                circleAnim.setAttribute('attributeName', 'opacity');
+                circleAnim.setAttribute('from', '0');
+                circleAnim.setAttribute('to', '1');
+                circleAnim.setAttribute('begin', (index * stepDuration) + 's');
+                circleAnim.setAttribute('dur', '0.5s');
+                circleAnim.setAttribute('fill', 'freeze');
+                circle.appendChild(circleAnim);
+                animGroup.appendChild(circle);
+
+                // Labels pour points clés
+                if (step.haplogroup === 'Y-Adam' || step.haplogroup === 'La Tène' || step.haplogroup === 'Luc') {
+                    const text = document.createElementNS(svgNS, 'text');
+                    text.setAttribute('x', cx);
+                    text.setAttribute('y', cy - 20);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('font-size', '16');
+                    text.setAttribute('font-weight', 'bold');
+                    text.setAttribute('fill', 'white');
+                    text.setAttribute('stroke', 'black');
+                    text.setAttribute('stroke-width', '0.5');
+                    text.setAttribute('paint-order', 'stroke');
+                    text.setAttribute('opacity', '0');
+                    text.textContent = step.haplogroup;
+
+                    const textAnim = document.createElementNS(svgNS, 'animate');
+                    textAnim.setAttribute('attributeName', 'opacity');
+                    textAnim.setAttribute('from', '0');
+                    textAnim.setAttribute('to', '1');
+                    textAnim.setAttribute('begin', (index * stepDuration) + 's');
+                    textAnim.setAttribute('dur', '0.5s');
+                    textAnim.setAttribute('fill', 'freeze');
+                    text.appendChild(textAnim);
+                    animGroup.appendChild(text);
+                }
+            });
+
+            // Ajouter un titre
+            const title = document.createElementNS(svgNS, 'text');
+            title.setAttribute('x', displayWidth / 2);
+            title.setAttribute('y', displayHeight * 0.05);
+            title.setAttribute('text-anchor', 'middle');
+            title.setAttribute('font-size', Math.floor(displayWidth * 0.017));
+            title.setAttribute('font-weight', 'bold');
+            title.setAttribute('fill', 'white');
+            title.setAttribute('stroke', 'black');
+            title.setAttribute('stroke-width', '1');
+            title.setAttribute('paint-order', 'stroke');
+            title.textContent = 'Migration de l\'Haplogroupe Y - De Y-Adam à Luc';
+            svg.appendChild(title);
+
+            // Convertir en string et télécharger
+            const serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(svg);
+
+            // Ajouter la déclaration XML
+            svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'migration_haplogroupe_Y_animé.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('SVG animé exporté! Ouvrez le fichier dans un navigateur pour voir l\'animation.');
+        }
+
+        // Changer la vitesse
+        function changeSpeed() {
+            animationSpeed = parseInt(document.getElementById('speed-select').value);
+        }
+
+        // Animation continue pour l'effet de pulsation et le zoom
+        function continuousRender() {
+            animateZoom();
+            draw();
+            requestAnimationFrame(continuousRender);
+        }
+
+        // Créer les marqueurs de période sur la barre de progression
+        function createPeriodMarkers() {
+            const timelineBar = document.getElementById('timeline-bar');
+            const totalSteps = migrationSteps.length - 1;
+
+            // Trouver les changements de période
+            let lastPeriod = null;
+            let markerCount = 0;
+            migrationSteps.forEach((step, index) => {
+                if (step.period && step.period !== lastPeriod) {
+                    const position = (index / totalSteps) * 100;
+
+                    // Créer le trait vertical
+                    const tick = document.createElement('div');
+                    tick.className = 'period-tick';
+                    tick.style.left = position + '%';
+                    timelineBar.appendChild(tick);
+
+                    // Créer le label de période avec décalage vertical alterné
+                    const marker = document.createElement('div');
+                    marker.className = 'period-marker';
+                    marker.style.left = position + '%';
+                    // Alterner la position verticale pour éviter les chevauchements
+                    const verticalOffset = -20 - (markerCount % 3) * 15;
+                    marker.style.bottom = verticalOffset + 'px';
+                    marker.textContent = step.period;
+                    timelineBar.appendChild(marker);
+
+                    lastPeriod = step.period;
+                    markerCount++;
+                }
+            });
+        }
+
+        // Initialisation
+        createPeriodMarkers();
+        updateInfo();
+        continuousRender();
+    </script>
+</body>
+</html>
