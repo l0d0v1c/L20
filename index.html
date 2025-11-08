@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Migration de l'Haplogroupe Y - De Y-Adam à SQ26G3F2</title>
     <style>
         * {
@@ -15,6 +17,8 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+            touch-action: none;
         }
 
         #map-container {
@@ -23,6 +27,9 @@
             height: 100vh;
             background: #000;
             overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #map-wrapper {
@@ -138,9 +145,20 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        /* Hover uniquement sur desktop */
+        @media (hover: hover) and (pointer: fine) {
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            }
+
+            button.play-btn:hover {
+                box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+            }
+
+            button.reset-btn:hover {
+                box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+            }
         }
 
         button:active {
@@ -153,22 +171,128 @@
             opacity: 0.5;
         }
 
+        /* Styles responsives pour mobile */
+        @media (max-width: 768px) {
+            #info-panel {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 15px;
+                font-size: 13px;
+            }
+
+            h1 {
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+
+            #current-step {
+                font-size: 20px;
+            }
+
+            #step-location {
+                font-size: 14px;
+            }
+
+            #step-time {
+                font-size: 12px;
+            }
+
+            #step-description {
+                font-size: 13px;
+            }
+
+            .legend {
+                top: auto;
+                bottom: 200px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 15px;
+                font-size: 11px;
+            }
+
+            .legend h3 {
+                font-size: 14px;
+            }
+
+            #timeline {
+                bottom: 140px;
+                left: 10px;
+                right: 10px;
+                width: auto;
+                padding: 15px;
+            }
+
+            #timeline-labels {
+                font-size: 11px;
+            }
+
+            #step-counter {
+                font-size: 12px;
+            }
+
+            #controls {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                width: auto;
+                transform: none;
+                padding: 15px;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            button {
+                padding: 10px 16px;
+                font-size: 13px;
+                min-width: 44px;
+                min-height: 44px;
+            }
+
+            .speed-control {
+                width: 100%;
+                justify-content: center;
+                font-size: 12px;
+            }
+
+            .speed-control select {
+                padding: 8px;
+                font-size: 12px;
+            }
+        }
+
+        /* Styles pour très petits écrans (iPhone SE, etc.) */
+        @media (max-width: 400px) {
+            button {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            #controls {
+                gap: 8px;
+                padding: 10px;
+            }
+
+            .legend.hidden {
+                display: none;
+            }
+
+            #info-panel.hidden {
+                display: none;
+            }
+        }
+
         button.play-btn {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
         }
 
-        button.play-btn:hover {
-            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
-        }
-
         button.reset-btn {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-        }
-
-        button.reset-btn:hover {
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
         }
 
         #timeline {
@@ -418,6 +542,7 @@
     </div>
 
     <script>
+        const mapContainer = document.getElementById('map-container');
         const migrationSteps = [
             {
                 haplogroup: "Y-Adam",
@@ -768,6 +893,15 @@
         let targetZoom = 1;
         let targetPanX = 0;
         let targetPanY = 0;
+
+        // Variables pour les gestes tactiles
+        let touchStartDistance = 0;
+        let touchStartZoom = 1;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartPanX = 0;
+        let touchStartPanY = 0;
+        let isTouching = false;
 
         // Initialiser le SVG
         function initSVG() {
@@ -1297,6 +1431,92 @@
                 }
             });
         }
+
+        // Gestion des gestes tactiles pour mobile
+        function getTouchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function getTouchCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
+        }
+
+        // Événements tactiles
+        mapContainer.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                // Pinch-to-zoom
+                e.preventDefault();
+                isTouching = true;
+                touchStartDistance = getTouchDistance(e.touches);
+                touchStartZoom = currentZoom;
+                const center = getTouchCenter(e.touches);
+                touchStartX = center.x;
+                touchStartY = center.y;
+                touchStartPanX = currentPanX;
+                touchStartPanY = currentPanY;
+            } else if (e.touches.length === 1) {
+                // Pan avec un doigt
+                isTouching = true;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchStartPanX = currentPanX;
+                touchStartPanY = currentPanY;
+            }
+        }, { passive: false });
+
+        mapContainer.addEventListener('touchmove', (e) => {
+            if (!isTouching) return;
+
+            if (e.touches.length === 2) {
+                // Pinch-to-zoom
+                e.preventDefault();
+                const currentDistance = getTouchDistance(e.touches);
+                const scale = currentDistance / touchStartDistance;
+                targetZoom = Math.max(1, Math.min(5, touchStartZoom * scale));
+
+                // Ajuster le pan pour garder le centre du pinch au même endroit
+                const center = getTouchCenter(e.touches);
+                const deltaX = center.x - touchStartX;
+                const deltaY = center.y - touchStartY;
+                targetPanX = touchStartPanX + (deltaX / window.innerWidth) * 100;
+                targetPanY = touchStartPanY + (deltaY / window.innerHeight) * 100;
+            } else if (e.touches.length === 1) {
+                // Pan avec un doigt
+                e.preventDefault();
+                const deltaX = e.touches[0].clientX - touchStartX;
+                const deltaY = e.touches[0].clientY - touchStartY;
+                targetPanX = touchStartPanX + (deltaX / window.innerWidth) * 100;
+                targetPanY = touchStartPanY + (deltaY / window.innerHeight) * 100;
+            }
+        }, { passive: false });
+
+        mapContainer.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                isTouching = false;
+            } else if (e.touches.length === 1) {
+                // Passer du pinch au pan
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchStartPanX = currentPanX;
+                touchStartPanY = currentPanY;
+            }
+        });
+
+        mapContainer.addEventListener('touchcancel', () => {
+            isTouching = false;
+        });
+
+        // Support de la molette de souris pour le zoom (desktop)
+        mapContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+            targetZoom = Math.max(1, Math.min(5, targetZoom * zoomDelta));
+        }, { passive: false });
 
         // Initialisation
         createPeriodMarkers();
