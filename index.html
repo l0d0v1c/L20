@@ -1068,30 +1068,47 @@
         }
 
         // Export SVG animé
-        function exportAnimatedSVG() {
+        async function exportAnimatedSVG() {
             const svgNS = "http://www.w3.org/2000/svg";
 
             // Obtenir les dimensions affichées de l'image (après object-fit: cover)
             const mapImg = document.getElementById('map-image');
-            const mapWrapper = document.getElementById('map-wrapper');
 
-            // Utiliser les dimensions du conteneur comme référence
-            const displayWidth = mapWrapper.clientWidth;
-            const displayHeight = mapWrapper.clientHeight;
+            // Utiliser les dimensions de la fenêtre comme référence (avant tout zoom)
+            const displayWidth = window.innerWidth;
+            const displayHeight = window.innerHeight;
+
+            // Convertir l'image en base64 en évitant le problème CORS
+            let imageDataUrl;
+            try {
+                const response = await fetch('carte.jpg');
+                const blob = await response.blob();
+                imageDataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement de l\'image:', error);
+                alert('Impossible de charger l\'image. Le SVG sera exporté avec un chemin relatif.');
+                imageDataUrl = 'carte.jpg';
+            }
 
             const svg = document.createElementNS(svgNS, 'svg');
             svg.setAttribute('xmlns', svgNS);
-            svg.setAttribute('viewBox', `0 0 ${displayWidth} ${displayHeight}`);
+            svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+            svg.setAttribute('viewBox', '0 0 1 1');
             svg.setAttribute('width', displayWidth);
             svg.setAttribute('height', displayHeight);
+            svg.setAttribute('preserveAspectRatio', 'none');
 
             // Ajouter l'image de fond avec preserveAspectRatio pour simuler object-fit: cover
             const image = document.createElementNS(svgNS, 'image');
-            image.setAttribute('href', 'carte.jpg');
+            image.setAttribute('href', imageDataUrl);
             image.setAttribute('x', '0');
             image.setAttribute('y', '0');
-            image.setAttribute('width', displayWidth);
-            image.setAttribute('height', displayHeight);
+            image.setAttribute('width', '1');
+            image.setAttribute('height', '1');
             image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
             svg.appendChild(image);
 
@@ -1109,12 +1126,12 @@
                 const to = migrationSteps[i + 1];
 
                 const line = document.createElementNS(svgNS, 'line');
-                line.setAttribute('x1', from.x * displayWidth);
-                line.setAttribute('y1', from.y * displayHeight);
-                line.setAttribute('x2', to.x * displayWidth);
-                line.setAttribute('y2', to.y * displayHeight);
+                line.setAttribute('x1', from.x);
+                line.setAttribute('y1', from.y);
+                line.setAttribute('x2', to.x);
+                line.setAttribute('y2', to.y);
                 line.setAttribute('stroke', from.color);
-                line.setAttribute('stroke-width', '3');
+                line.setAttribute('stroke-width', '0.002');
                 line.setAttribute('stroke-opacity', '0.8');
                 line.setAttribute('stroke-linecap', 'round');
 
@@ -1133,14 +1150,14 @@
 
             // Dessiner les points avec animation
             migrationSteps.forEach((step, index) => {
-                const cx = step.x * displayWidth;
-                const cy = step.y * displayHeight;
+                const cx = step.x;
+                const cy = step.y;
 
                 // Halo extérieur
                 const halo = document.createElementNS(svgNS, 'circle');
                 halo.setAttribute('cx', cx);
                 halo.setAttribute('cy', cy);
-                halo.setAttribute('r', '15');
+                halo.setAttribute('r', '0.008');
                 halo.setAttribute('fill', step.color);
                 halo.setAttribute('opacity', '0');
 
@@ -1158,10 +1175,10 @@
                 const circle = document.createElementNS(svgNS, 'circle');
                 circle.setAttribute('cx', cx);
                 circle.setAttribute('cy', cy);
-                circle.setAttribute('r', '8');
+                circle.setAttribute('r', '0.005');
                 circle.setAttribute('fill', step.color);
                 circle.setAttribute('stroke', 'white');
-                circle.setAttribute('stroke-width', '2');
+                circle.setAttribute('stroke-width', '0.001');
                 circle.setAttribute('opacity', '0');
 
                 const circleAnim = document.createElementNS(svgNS, 'animate');
@@ -1178,13 +1195,13 @@
                 if (step.haplogroup === 'Y-Adam' || step.haplogroup === 'La Tène' || step.haplogroup === 'Luc') {
                     const text = document.createElementNS(svgNS, 'text');
                     text.setAttribute('x', cx);
-                    text.setAttribute('y', cy - 20);
+                    text.setAttribute('y', cy - 0.01);
                     text.setAttribute('text-anchor', 'middle');
-                    text.setAttribute('font-size', '16');
+                    text.setAttribute('font-size', '0.008');
                     text.setAttribute('font-weight', 'bold');
                     text.setAttribute('fill', 'white');
                     text.setAttribute('stroke', 'black');
-                    text.setAttribute('stroke-width', '0.5');
+                    text.setAttribute('stroke-width', '0.0003');
                     text.setAttribute('paint-order', 'stroke');
                     text.setAttribute('opacity', '0');
                     text.textContent = step.haplogroup;
@@ -1203,14 +1220,14 @@
 
             // Ajouter un titre
             const title = document.createElementNS(svgNS, 'text');
-            title.setAttribute('x', displayWidth / 2);
-            title.setAttribute('y', displayHeight * 0.05);
+            title.setAttribute('x', '0.5');
+            title.setAttribute('y', '0.05');
             title.setAttribute('text-anchor', 'middle');
-            title.setAttribute('font-size', Math.floor(displayWidth * 0.017));
+            title.setAttribute('font-size', '0.02');
             title.setAttribute('font-weight', 'bold');
             title.setAttribute('fill', 'white');
             title.setAttribute('stroke', 'black');
-            title.setAttribute('stroke-width', '1');
+            title.setAttribute('stroke-width', '0.0005');
             title.setAttribute('paint-order', 'stroke');
             title.textContent = 'Migration de l\'Haplogroupe Y - De Y-Adam à Luc';
             svg.appendChild(title);
