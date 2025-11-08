@@ -46,6 +46,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            object-position: center center;
             display: block;
         }
 
@@ -56,6 +57,15 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
+        }
+
+        /* Forcer le SVG à suivre exactement les dimensions de l'image */
+        #map-wrapper svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
 
         #info-panel {
@@ -907,9 +917,31 @@
         function initSVG() {
             const rect = mapImage.getBoundingClientRect();
 
-            // Définir le viewBox du SVG pour utiliser des coordonnées 0-1
-            svg.setAttribute('viewBox', '0 0 1 1');
-            svg.setAttribute('preserveAspectRatio', 'none');
+            // Calculer le viewBox en fonction de l'aspect ratio pour simuler object-fit: cover
+            const containerWidth = rect.width;
+            const containerHeight = rect.height;
+            const containerAspect = containerWidth / containerHeight;
+
+            // Aspect ratio de l'image source (supposé ~2:1 pour une carte du monde)
+            // Ajustez cette valeur si votre image a un ratio différent
+            const imageAspect = 2;
+
+            let viewBoxX = 0, viewBoxY = 0, viewBoxWidth = 1, viewBoxHeight = 1;
+
+            if (containerAspect > imageAspect) {
+                // Container plus large que l'image : crop vertical
+                viewBoxWidth = 1;
+                viewBoxHeight = containerAspect / imageAspect;
+                viewBoxY = -(viewBoxHeight - 1) / 2;
+            } else {
+                // Container plus haut que l'image : crop horizontal
+                viewBoxHeight = 1;
+                viewBoxWidth = imageAspect / containerAspect;
+                viewBoxX = -(viewBoxWidth - 1) / 2;
+            }
+
+            svg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
 
             draw();
         }
